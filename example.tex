@@ -114,7 +114,7 @@ Below we show the affect of increasing the number of cores the problem is run on
                     96          &        &   917             \\  
     \end{tabular}
     \caption{Variation of the number of cores run for the simulation of #2855. Elapsed time generated from the SLURM submission system. }
-    \label{tab:paralell}
+    \label{tab:parallel}
 \end{table}
 The poor parallel efficiency is further evidenced when inspecting the efficiency as measured by KENO for a single flux shape.  
 
@@ -135,26 +135,27 @@ M8CAL 2855 only?
     \label{tab:my_label}
 \end{table}
 
+\subsection{Point Kinetics Variation}
+As mentioned the IQS methodology empolyed splits the transport equation into several coupled equations solved on 3 time scales.  Two of these scales relate to the solving of the point kinetics equation.  The shortest involves finding the values for reactivity, generation time, etc. from each quantitties respective inner productive definition.  These definitinos are readily available and can be found in (ref Bently?).  The differential equation formed from these qauntites is solved on a larger time scale.  Both the frequency of the updates to these inner product values and the point kinetics equation may be varied. These values are easier to find than the flux shape and thus are solved considerably more frequently. These too are formulated to contain the time dependence and must be solved when the system is undergoing significant changes (e.g. reactivity insertion). 
+
+To determine the minimum number of times to solve the point kinetics equation between flux shape updates perform several simulations.  Each simulation we increase the number of times the quantities within the point kinetics equation are evaluated until the behavior appears to not change.  The quantity of most interest in these transient experiments is the total energy deposited in the core, thus is a number we would like to simulate accurately.  Additionally, experimental values for the yield are reported for this experiment.  Both experimental and all calculated values for the yield as function of time are found in Figure \ref{fig:var_pt_kin}.  The first few calculations (ptkin10)  
+
+\begin{figure}
+\label{fig:var_pt_kin}
+
+\caption{Varitaion of point kinetics and comparison to experiment.}
+
+\end{figure}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Conclusions}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%\appendix
-%\section{Appendix}
-%
-%Numbering in the appendix is different:
-%\begin{equation} \label{eq:appendix}
-%  2 + 2 = 5\,.
-%\end{equation}
-%and another equation:
-%\begin{equation} \label{eq:appendix2}
-%  a + b = c\,.
-%\end{equation}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Acknowledgments}
-This material is based upon work supported a Idaho National Laboratory.
+This material is based upon work supported the Idaho National Laboratory.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \bibliographystyle{ans}
