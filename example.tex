@@ -83,55 +83,44 @@ The advantage of these varying time scales is computational savings.  This comes
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Results and Analysis}
-With the integration of the latest version of KENO from SCALE 6.2 we now have the ability to calculate the most intensive portion of the calculation in parallel.  Previously for problems with complex geometry the calculation of the shape may have taken several days to weeks when using to achieve adequate sampling and statistics.  By running TDKENO at the University of Florida's HiperGator supercomputer we are able to run on hundreds of CPUs resulting in the same calculations taking several hours.  These improvements are illustrated by comparing the time and memory usage with parallel KENO.  We apply these improvements to a particularly challenging problem of modeling the transients experiments with the Transient Reactor Test Facility (TREAT).
+With the integration of the latest version of KENO from SCALE 6.2 we now have the ability to calculate the most intensive portion of the calculation in parallel.  Previously for problems with complex geometry the calculation of the shape may have taken several days to weeks when using to achieve adequate sampling and statistics.  By running TDKENO at the University of Florida's HiperGator supercomputer we are able to run on hundreds of CPUs resulting in the same calculations taking several hours.  These improvements are illustrated by comparing the time and memory usage with parallel KENO.  We apply these improvements to a particularly challenging problem of modeling the transients experiments with the Transient Reactor Test Facility (TREAT).  Without verification the time steps taken in TDKENO are suitable for this problem we vary the frequency of flux shape and point kinetics calculations.
+
+To evaluate the perforance of these improvements to TDKENO we run a simulation of one of the M8CAL experiments on varying numbers of nodes on UF's Hiper gator.  Each node has an Intel E5-2698 v3 (16 core, 2.3 GHz) with 4GB of ram per node.  We note, at present only the flux shape is calculated in parallel.  The point kinetics calculations are all done in serial and are being invesitaged on the possiblity of calculating these quantities on graphics cards.  The M8CAL experiment is refereed to in the documentation of the temperature limited transient #2855 (M8CAL reference).  This one was chosen as it acutally has been the most difficult to simulate compared to similar transients, referred to as #2856 and #2857. In previous modeling of these experiments the experimental data compared to was thought to have inconsistencies with the values reported in the write up (my PHYSOR 2016 paper).  However, upon further inspection the data that corresponds to the M8CAL reported values has been found, digitized and compared to the results shown here.
 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Computational Improvements}
 
+The computaional improvements are highlighted in TDKENO by comparing the same problem run on an increasing number of cores.  In this case the KENO calculations were run with 10000 particles per generation with a total of 2500 generations. A total of 14 flux shapes were calculated with KENO at times cenetered around the first few seconds.  We have chosen these numbers as it appears to give almost identical results to simulations run with many more histories as seen in Figure \ref{compare_hist}.  Simulations run with additional histories do result in less statistical uncertainties in values such as fluxes, keff, etc.  These are of less interest in this paper.  The model of the TREAT core used contains approximately 4000 regions with 21 materials using KENO-VI generalized geometry.  The TREAT core is unique in its ability to safely have simulate large reactivity insertions.  It accomplishes this with a core composed of 93.1\% U02 within a graphite matrix, with a ratio of U02 to graphite of 1:10000.  Details about the TREAT core may be found in (TREAT refs).  A variety of control rods are available and the transient shown in this paper is induced by the rapid withdrawl of transient rods over 0.13 seconds. 
+
+\begin{figure}
+\label{compare_hist}
+
+\caption{Figure comparing calculated values with a varying number of histories.}
+\end{figure}
+
+Below we show the affect of increasing the number of cores the problem is run on.  The relatively low number of histories results in poor scaling to large number of cores due to increased communication time and less work done by each core.  The communication time is compounded because the flus shape calculation is done in parallel with the results gathered on the master.  This master processor then computes the point kinetics values in serial and thus are not improved with the integration of parallel KENO.  Nevertheless the perofrmance is drastically improved when compared to serial with a modest amount of processors (for high performance computing standards).  
 \begin{table}[h]
     \centering
     \begin{tabular}{c|c|c}
-                           & Memory & Cores \\
-        KENO-VI (serial)   &        & 1 \\ 
-        TDKENO             &        & 1  \\
-        KENO-VI (parallel) &        & 40 \\
-        TDKENO             &        & 1 \\
+                    Total Cores & Memory & Elapsed Time (minutes) \\
+                    1           &        &   12347            \\  
+                    16          &        &                \\  
+                    32          &        &   1619              \\  
+                    48          &        &   1356              \\  
+                    64          &        &   1051             \\  
+                    80          &        &                \\  
+                    96          &        &   917             \\  
     \end{tabular}
-    \caption{Caption}
-    \label{tab:my_label}
+    \caption{Variation of the number of cores run for the simulation of #2855. Elapsed time generated from the SLURM submission system. }
+    \label{tab:paralell}
 \end{table}
-
-%Later on, we can include a table, even one that spans two columns such as
-%Table~\ref{tab:widetable}.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%\begin{table*}[htb]
-%  \centering
-%\begin{tabular}{llllllllll}\toprule
-%      & $\phi_T(0)$      & $\phi_T(10)$      & $\phi_T(20)$      &
-%      $\phi_D(0)$      & $\phi_D(10)$      & $\phi_D(20)$      & $\rho$      &
-%      $\varepsilon$      & $N_\text{it}$
-%\\ \midrule
-%$c=0.999$  & 0.9038 & 20.63 & 31.24 & 0.9087 & 20.63 & 31.23 & 0.2192 & $10^{-7}$ & 15
-%\\
-%$c=0.990$  & 0.3675 & 13.04 & 24.7 & 0.3696 & 13.04 & 24.69 & 0.2184 & $10^{-7}$ & 15
-%\\
-%$c=0.900$  & 0.009909 & 4.776 & 17.64 & 0.009984 & 4.786 & 17.63 & 0.2118 & $10^{-7}$ & 14
-%\\
-%$c=0.500$  & $6.069\times 10^{-5}$ & 2.212 & 15.53 & 6.213$\times 10^{-5}$ & 2.239 & 15.53 & 0.2068 & $10^{-7}$ & 13
-%\\
-%\bottomrule
-%\end{tabular}
-%  \caption{This is an example of a really wide table which might not normally
-%  fit in the document.}
-%  \label{tab:widetable}
-%\end{table*}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+The poor parallel efficiency is further evidenced when inspecting the efficiency as measured by KENO for a single flux shape.  
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{TREAT Modeling}
+\subsection{Flux Shape Variation}
 M8CAL 2855 only?
 
 \begin{table}[h]
