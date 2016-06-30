@@ -1,6 +1,6 @@
 \documentclass{anstrans}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\title{Parallel Performance of the Time Dependent Transport Code TDKENO Applied to TREAT Simulations}
+\title{Parallel Performance of the Time Dependent Transport Code TDKENO with Applications to TREAT Simulations}
 \author{Zander Mausolff,$^{*}$ Mark DeHart,$^{\dagger}$ Sedat Goluoglu $^{*}$}
 
 \institute{
@@ -40,7 +40,7 @@ The parallel capabilities of KENO allows TDKENO to simulate complex transient ex
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Theory}
-Solving the transport equation is non trivial when including the time dependence and the explicit representation of delayed neutrons. Transient simulations resulting in the significant changes in the flux profile require rigorous methods to solve this "master equation" of reactor physics.  In TDKENO, the IQS method enables such simulations.  Utilizing the IQS method relies on the assumption that the total neutron flux can be factored into a shape and amplitude function \cite{Gehin}.  The amplitude function captures the time dependence and takes on physical significance by being cast into the form of the point kinetics equations as follows:
+Solving the transport equation is non trivial when including the time dependence and the explicit representation of delayed neutrons. Transient simulations resulting in the significant changes in the flux profile require rigorous methods to solve this "master equation" of reactor physics.  In TDKENO, the IQS method enables such simulations.  Utilizing the IQS method relies on the assumption that the total neutron flux can be factored into a shape and amplitude function \cite{goluoglu2001time}\cite{Gehin}.  The amplitude function captures the time dependence and takes on physical significance by being cast into the form of the point kinetics equations as follows:
 
 \begin{equation}
     \label{eq:pt_kin}
@@ -48,7 +48,7 @@ Solving the transport equation is non trivial when including the time dependence
 \end{equation}
 
 where $P(t)$ is the amplitude function, $\rho$ is reactivity, $\bar{\beta}$ is the total delayed neutron fraction, $\Lambda$ is the generation time, $\lambda_j$ is the decay constant per neutron group $j$, $C_j$ is the density of delayed neutron precursors for group j, and $\bar{Q}$ is a source.  
- Reactivity, generation time, etc. (referred to as reactivity calculations) in TDKENO are found from their inner product definitions using a linearly interpolated flux shape and can be found in reference \cite{Bentley}.  Alternatively, these values may be computed during the Monte Carlo random walk but requires significant neutron histories to achieve low uncertainties \cite{Waddell}.  The shape function varies slowly in time and solves a modified version of the steady state transport equation.  The main modification here is an adjustment to the total cross section \cite{Bentley}\cite{Gehin}.  For this reason TDKENO calculations are limited to mult-group calculations, typically using 238 groups.  The flux distribution is allowed to vary in time without having requiring the transport eqation to be solved often.  In TDKENO the shape equation is solved via Monte Carlo, but in principle the shape equation may be solved with deterministic methods.  Reference \cite{Shayesteh} provides an excellent rationale for implementing Monte Carlo techniques in flux shape calculations.  For the complete derivation of the IQS method used in TDKENO, one can refer to the appendix in reference \cite{Bentley}. 
+ Reactivity, generation time, etc. (referred to as reactivity calculations) in TDKENO are found from their inner product definitions using a linearly interpolated flux shape and can be found in reference \cite{Bentley}.  Alternatively, these values may be computed during the Monte Carlo random walk but requires significant neutron histories to achieve low uncertainties \cite{Waddell}.  The shape function varies slowly in time and solves a modified version of the steady state transport equation.  The main modification here is an adjustment to the total cross section \cite{goluoglu2001time}\cite{Gehin}.  For this reason TDKENO calculations are limited to multi-group calculations, typically using 238 groups.  The flux distribution is allowed to vary in time without having requiring the transport equation to be solved often.  In TDKENO the shape equation is solved via Monte Carlo, but in principle the shape equation may be solved with deterministic methods.  Reference \cite{Shayesteh} provides an excellent rationale for implementing Monte Carlo techniques in flux shape calculations.  For the complete derivation of the IQS method used in TDKENO, one can refer to the appendix in reference \cite{Bentley}. 
 
 Applying this factorization to the three-dimensional time-dependent transport equation with the explicit representation of delayed neutrons results in a set of coupled equations.  Equations for the flux shape, amplitude, and delayed neutron precursors are solved on several time scales through an iterative process. The relative sizes shown in Figure \ref{fig:time_scale}. 
 
@@ -61,44 +61,21 @@ Applying this factorization to the three-dimensional time-dependent transport eq
 
 The advantage of varying these time scales is computational overhead when compared to direct integration.  This comes from the flux shape being solved on a large time step. It is only done when the spatial distribution of neutrons changes significantly.  In between flux shapes, equation \ref{eq:pt_kin} is solved to capture the time dependent behaviour and is the smallest time scale in between reactivity calculations.  In some IQS implementations, so called "Predictor Corrector" methods, conditions are evaluated to determine if the time step is too large to solve the flux shape \cite{Dulla}.  
 
-%\begin{figure}[h]
-%    \centering
-%    \includegraphics[width=7cm]{figures/tdkeno_flow.pdf}
-%    \caption{Relationship between TDKENO and KENO.  TDKENO drives the time dependence, getting the %spatial neutron distribution from KENO.}
-%    \label{fig:tdkeno_flow}
-%\end{figure}
-
  In its current formulation, TDKENO does not do this but rather lets the user define when a flux shape should be calculated.  This gives flexibility and may allow for computational savings as transients experience a rapid change in neutron distribution that is generally known about \emph{a posteriori} and rapidly come to a steady state. Therefore, a new calculation of the flux shape is not required. However, since taking too large of a step is a possibility and may result in a less quality result, we are motivated to study the effects of varying the number of shape calculations.
 
-%Equations look exceedingly pretty. Here is a 3-D, monoenergetic, steady-state
-%transport equation with isotropic scattering and an isotropic extraneous source:
-%\begin{subequations} \label{eqs:fullTransport}
-%\begin{multline} \label{eq:fullTransportVol}
-%  \vec{\Omega}\vd \grad \psi(\vec{x}, \vec{\Omega})
-%  + \sigma(\vec{x}) \psi (\vec{x}, \vec{\Omega})
-%\\ =
-%  \frac{\sigma_s(\vec{x})}{4\pi} \int_{4\pi} \psi(\vec{x},\vec{\Omega}')
-%  \ud\Omega' + \frac{q(\vec{x})}{4\pi}
-%  \equiv \frac{1}{4\pi} Q(\vec{x}) \,,
-%\end{multline}
-%inside $\vec{x} \in V$, $\vec{\Omega} \in 4\pi$, with an incident boundary
-%condition
-%\begin{equation} \label{eq:fullTransportBndy}
-%  \psi(\vec{x}, \vec{\Omega}) = \psi^b(\vec{x}, \vec{\Omega}) \,,
-% \quad \vec{x} \in \partial V, \ \vec{\Omega} \vd \vec{n} < 0\,.
-%\end{equation}
-%\end{subequations}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Results and Analysis}
-With the integration of the latest version of KENO from SCALE 6.2 we now have the ability to calculate the most intensive portion of the calculation in parallel \cite{rearden2013overview}.  Previously, for problems with complex geometry, the calculation of the shape may have taken several days to weeks to achieve adequate sampling and statistics.  By running TDKENO at the University of Florida's recently upgraded "HiperGator 2" supercomputer, we are able to run on hundreds of cores. As a result, these same calculations are only taking several hours. We apply these run time improvements to the particularly challenging problem of modeling the experiments done at the Transient Reactor Test Facility (TREAT). 
+With the integration of the latest version of KENO from SCALE 6.2 we now have the ability to calculate the most intensive portion of the calculation in parallel (flux shape) \cite{rearden2013overview}.  Previously, for problems with complex geometry, the calculation of the shape may have taken several days to weeks to achieve adequate sampling and statistics.  By running TDKENO at the University of Florida's recently upgraded "HiperGator 2" supercomputer, we are able to run on hundreds of cores. As a result, these same calculations are only taking several hours. We apply these run time improvements to the challenging problem of modeling the experiments done at the Transient Reactor Test Facility (TREAT). 
 
-To evaluate the performance of TDKENO, one of the M8CAL experiments is simulated on varying numbers of nodes on the HiperGator while keeping all other parameters specific to the problem the same.  Each node has an Intel E5-2698 v3 (16 core, 2.3 GHz) with 4GB of RAM per node. Note that at present, only the flux shape is calculated in parallel.  The amplitude function and related quantities are solved in serial and are being investigated as to the potential improvements of calculating these quantities on graphic processing units (GPUs).  The M8CAL experiment being modeled is referred to in the documentation as the temperature limited transient \#2855 \cite{Robinson_Bauer_1994}.  This experiment was chosen as it has proven to be the most difficult to simulate compared to similar transients, referred to as \#2856 and \#2857 in references \cite{physor_mausolff} and \cite{kontogeorgakos2014treat}.  In previous modeling of these experiments, the experimental data compared to was thought to have inconsistencies with the values reported in the write up \cite{physor_mausolff}.  However, upon further inspection, the data that corresponds to the M8CAL reported values has been found, digitized, and compared to the results shown here.
+To evaluate the performance of TDKENO, one of the M8CAL experiments is simulated.  The simulation is ran on a varying numbers of the HiperGator's nodes while keeping all other parameters specific to the problem constant.  Each node has an Intel E5-2698 v3 (16 core, 2.3 GHz) with 4GB of RAM per node. Note that at present, only the flux shape is calculated in parallel.  The amplitude function and related quantities are solved in serial. Investigation is underway to the potential of calculating these quantities on graphic processing units (GPUs).  
+
+The M8CAL experiment being modeled is referred to in the documentation as the temperature limited transient \#2855 \cite{Robinson_Bauer_1994}.  This experiment was chosen as it has proven to be the most difficult to simulate compared to similar transients as shown in \cite{physor_mausolff} and \cite{kontogeorgakos2014treat}.  Previous papers contained experimental data that was thought to have inconsistencies with the values reported in the M8CAL write up \cite{physor_mausolff}\cite{physor_paluch}.  However, upon further inspection, the data that corresponds to the M8CAL reported values has been found, digitized, and compared to the results shown here.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Computational Improvements}
 
-The computational improvements are highlighted in TDKENO by comparing the same problem run on an increasing number of cores.  In this case, the KENO calculations were run with 10000 particles per generation with a total of 2500 generations. A total of 14 flux shapes were calculated with KENO at times primarily centered around the first few seconds.  We have chosen these numbers as they appear to give almost identical results to simulations run with many more histories as seen in Figure \ref{compare_hist}.  Simulations run with additional histories do result in less statistical uncertainties in values such as fluxes, keff, etc.  These are of less interest in this paper.  
+The computational improvements are highlighted in TDKENO by running the same calculation on an increasing number of cores.  In this case, the KENO-VI calculations were run with 10000 particles per generation and 2500 generations. A total of 14 flux shapes were calculated with KENO at times primarily centered around the first few seconds.  We have chosen these parameters as they appear to give almost identical results to simulations run with many more histories as seen in Figure \ref{compare_hist}.  Simulations run with additional histories do result in less statistical uncertainties in values such as fluxes, keff, etc.  These are of less interest in this paper.  
 
 \begin{figure}[h]
     \centering
@@ -106,9 +83,9 @@ The computational improvements are highlighted in TDKENO by comparing the same p
     \caption{The calculated power vs. time is compared between TDKENO simulation of TREAT transient \#2855 with differing numbers of histories. }
 \end{figure}
 
-The model of the TREAT core used contains approximately 4000 regions with 21 materials using KENO-VI generalized geometry.  The TREAT core is unique in its ability to safely simulate large reactivity insertions.  It accomplishes this with a core composed of 93.1\% $UO_2$ embedded in a graphite matrix, with a ratio of $UO_2$ to graphite of approximately 1:10000.  Details about the TREAT core may be found in \cite{bess2015baseline}.  A variety of control rods are available and the transient shown in this paper is induced by the rapid withdrawal of transient rods over 0.13 seconds. 
+The KENO-VI TREAT model used contains approximately 4000 regions with 21 materials.  The TREAT core is unique in its ability to safely simulate large reactivity insertions.  It accomplishes this with a core composed of 93.1\% $UO_2$ embedded in a graphite matrix, with a ratio of $UO_2$ to graphite of approximately 1:10000.  Details about the TREAT core may be found in \cite{bess2015baseline}.  A variety of control rods are available and the transient shown in this paper is induced by the rapid withdrawal of transient rods over 0.13 seconds. 
 
-Below we show the affect of increasing the number of cores the problem is run on.  The relatively low number of histories results in poor scaling to large number of cores due to increased communication time and less work done by each core.  The communication time is compounded because the flux shape calculation is done in parallel with the results gathered on the master.  This master processor then computes the point kinetics values in serial.  Nevertheless the performance is drastically improved when compared to serial even with a modest amount of processors (for high performance computing standards).  
+Below we show the affect of increasing the number of cores the problem is run on.  The relatively low number of histories results in poor scaling to large number of cores, as in Figure \ref{fig:speedup} due to increased communication time and less work done by each core.  The communication time is compounded because the flux shape calculation is done in parallel and then gathered on a single core 14 times.  This master processor then computes the point kinetics values in serial.  Nevertheless the performance is drastically improved when compared to serial even with a modest amount of processors (for high performance computing standards).  
 \begin{table}[h]
     \centering
     \begin{tabular}{c|c}
@@ -127,9 +104,8 @@ Below we show the affect of increasing the number of cores the problem is run on
     \caption{Variation of the number of cores run for the simulation of \#2855. Elapsed time generated from the SLURM submission system \cite{yoo2003slurm}. }
     \label{tab:parallel}
 \end{table}
-Improvements could be made to further optimize the inputs by judiciously choosing the number of particles such that an integer amount is calculated on a single core.  Such methods may improve load balancing and communication time.  However, this is something a user should not be thinking about and these results are more indicative of "real world" behaviour.
 
-%The poor parallel efficiency is further evidenced when inspecting the efficiency as measured by %KENO for a single flux shape.  
+Figure \ref{fig:speedup} plots the speed up compared to the number of cores run on.  Here, speedup is defined as the execution time on a single core divided by the time for that respective run.  Improvements could be made to further optimize the inputs by judiciously choosing the number of particles such that an integer amount are simulated on a single core.  Such methods may improve load balancing and communication time.  However, this is something a user should not be thinking about and these results are more indicative of "real world" behaviour. 
 
 \begin{figure}[h]
     \centering
@@ -139,27 +115,15 @@ Improvements could be made to further optimize the inputs by judiciously choosin
 \end{figure}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%\subsection{Flux Shape Variation}
-%M8CAL 2855 only?
-%
-%\begin{table}[h]
-%    \centering
-%    \begin{tabular}{c|c|c}
-%         & TDKENO-K5 & TDKENO-K6 \\
-%        Generations &  10000 & 10000 \\
-%        Particles   &  10000 & 10000 \\
-%        Skipped     &  500   & 500  \\
-%    \end{tabular}
-%    \caption{Caption}
-%    \label{tab:my_label}
-%\end{table}
 
 \subsection{Point Kinetics Variation}
-As mentioned, the IQS methodology  splits the transport equation into several coupled equations solved on three time scales.  These definitions are readily available and can be found in reference \cite{Bentley}.  Each of the scales may be chosen by the user providing an integer number.  This number indicates the amount of calculations done between flux shapes.  For example, one can specify to do 10 point kinetics solves per reactivity calculation and 20 reactivity calculations, for a total of 200 calculations in-between flux shapes.  As stated previously, these equations are formulated to contain the time dependence and must be solved when the system undergoes significant changes (e.g. reactivity insertion).  In its current state there are no methods to verify if too few calculations are chosen. To ensure time dependent behaviour is not missed, we have been performing a large number of calculations between flux shapes.  These do not take too long to compute in general but we are motivated to mitigate this number for several reasons.  One, examining increasingly complex problems results in models with thousands of regions and the number of regions is directly proportional to the calculation time.  Second, with the parallel calculation of the flux shape, the amplitude function becomes next portion of the code to speed up.
+As mentioned, the IQS methodology  splits the transport equation into several coupled equations solved on three time scales.  Each of the scales may be chosen by the user.  The user simply defines when the flux shape updates are performed.  Next, an integer number of reactivity calculations and point kinetics solves are provided and are performed in-between flux shapes.  For example, one can specify to do 10 point kinetics solves per reactivity calculation and 20 reactivity calculations, for a total of 200 calculations in-between flux shapes.  As stated, the point kinetics equations are formulated to contain the time dependence and must be solved when the system undergoes significant changes (e.g. reactivity insertion).  In its current state there are no methods to verify if too few calculations are chosen. To ensure time dependent behaviour is not missed, we have been performing a large number of calculations between flux shapes.  These do not take too long to compute in general but we are motivated to mitigate this time.  Primarily because study of complex problems results in models with thousands of regions. The number of regions is directly proportional to the calculation time as each regions reactivity, generation time, etc. must be integrated over.  
 
-   The quantity of most interest in these transient experiments is the total energy deposited in the core, thus is a number we would like to simulate accurately.  Additionally, experimental values for the yield and power as a function of time are reported for this experiment.  In previous  papers, the experimentally values were not transcribed properly and were slightly off \cite{physor_mausolff}.  What is shown here aligns with the values reported in the original experimental report \cite{Robinson_Bauer_1994}.  Both experimental and all calculated values for the yield as function of time are found in Figure \ref{fig:ptkinvar}.  The first 10-90 reactivity calculations all use 10 point kinetics solves.  The 100 line in Figure \ref{fig:ptkinvar} is the typical number we have been using and used 100 point kinetics solves.  The 500 line is an extreme case, with 500 reactivity and 500 point kinetics solves. Clearly this doesn't improve the solution at all.
+   The quantity of most interest in the TREAT transient calibration experiments is the total energy deposited in the core.  Comparison of calculation to experiment is possible as the yield and power as a function of time are reported.  In previous  papers, the experimentally values were not transcribed properly and were slightly off \cite{physor_mausolff}\cite{physor_paluch}.  What is shown here aligns with the values reported in the original experimental report \cite{Robinson_Bauer_1994}. 
    
-   From about 10 to 50 reactivity calculations, there is an obvious deviation that gives a final yield very far off from the experimental value.  After 60 reactivity calculations, further increases do not appear to give a different solution.  It appears one could get away with this many calculations and not suffer a loss of accuracy.
+   To evaluate the sensitivity to reactivity calculations performed several simulations are performed.  These simulations vary the number of reactivity calculations between flux shapes while maintaining a constant number of point kinetics solves (for the lines 10-90.  The first 10-90 reactivity calculations all use 10 point kinetics solves.  The 100 line in Figure \ref{fig:ptkinvar} is what we have been using, with 100 reactivity calculations and 100 point kinetics solves. Choosing values beyond the typical one did not change the final answer.  To exemplify this a case with  500 reactivity and 500 point kinetics solves was run. Clearly this did not improve the solution as observed in Figure \ref{fig:ptkinvar}
+   
+   From about 10 to 50 reactivity calculations, there is an obvious deviation that gives a final yield far off from the experimental value.  After 60 reactivity calculations, further increases do not appear to give a different solution.  It appears one could get away with this many calculations and not suffer a loss of accuracy.
 
 \begin{figure}[h]
     \centering
@@ -177,9 +141,9 @@ The goal behind minimizing the number of calculations in-between flux shape upda
     \label{fig:ptkin_time}
 \end{figure}
 
-There appears to be a linear trend as the number of reactivity calculations increases.  However, there are 3 outliers.  There is reason to believe these 3 runs are not representative of the general behaviour of TDKENO. The deviations may be attributed to running them on the HiperGator 2. These runs requested 5 nodes with 8 cores per node, which is only half the cores available on the node.  It is possible that during the runs, another program may have been using the other 8 cores and oversubscribed the node memory.  Other anomalies were present in runs performed with the same parameters, with the only difference being the number of cores run on.  For instance, looking at the CPU time for reactivity calculations on the runs shown in Figure \ref{fig:speedup} showed consistent behaviour, except for the run performed on a total of 80 cores as seen in Figure \ref{fig:ptkin_same_time}. These simulations were performed during the first month of operation of the HiperGator 2 and the system may not been optimized.  In general inspecting Figure \ref{fig:ptkin_same_time} shows the typical time spent calculating the reactivity/point kinetics is approximately 300 minutes.  Comparing that to the minimum number required to get the same answer (60 reactivity calculations as per Figure \ref{fig:ptkin_time}) about 180 minutes could be saved.  
+There appears to be a linear trend in time as the number of reactivity calculations increases.  However, there are 3 outliers.  There is reason to believe these 3 runs are not representative of the general behaviour of TDKENO. The deviations may be attributed to running them on the HiperGator 2. These runs requested 5 nodes with 8 cores per node, which is only half the cores available on the node.  It is possible that during the runs, another program may have been using the other 8 cores and oversubscribed the node memory.  Other anomalies were observed in runs performed with the same parameters. The only difference being the number of cores run on.  For instance, looking at the CPU time for reactivity calculations on the runs shown in Figure \ref{fig:speedup} showed consistent behaviour, except for the run performed on a total of 80 cores as seen in Figure \ref{fig:ptkin_same_time}. These simulations were performed during the first month of operation of the HiperGator 2 and the system may not been optimized.  Figure \ref{fig:ptkin_same_time} shows the typical time (100 reactivity and 100 point kinetics calculations) spent  is approximately 300 minutes. Again in Figure \ref{fig:ptkin_same_time} has one calculation that took significantly longer.  Comparing the calculation time with typically chosen parameters to the minimum number required to get the same answer (60 reactivity calculations as per Figure \ref{fig:ptkin_time}) about 180 minutes could be saved.  
 
-It is clear that minimizing the number of reactivity calculations improves computational time without sacrificing the final solution quality.  This motivates future work in several ways.  This time is not insignificant and can be further improved with parallelization on CPUs or GPUS.  Additionally, that determining criteria when the solution is converged is desirable to prevent unnecessary computational time.   
+It is clear that minimizing the number of reactivity calculations improves computational time without sacrificing the final solution quality.  This motivates future work in several ways.  This time is not insignificant and can be further improved with parallelization on CPUs or GPUS.  Additionally, that determining solution convergence criteria is desirable to prevent unnecessary computational time.   
 
 \begin{figure}[h]
     \centering
@@ -190,7 +154,7 @@ It is clear that minimizing the number of reactivity calculations improves compu
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Conclusions}
-The integration of a parallel flux shape solver has resulted in a transient analysis tool that is up to 15 times faster than previous implementations on a single core.  It is not practical to run many simulations on increasingly complex problems without waiting months for a result. Such nuanced behaviour such as the variation of reactivity calculations during a TDKENO run may now be studied in detail to further improve the method.  It has been shown for difficult problems like TREAT simulations, the deterministic portions of the code take significant CPU time and are ripe for parallelization implementations. Future work will be to determine convergence criteria for the reactivity and point kinetics equations and have these done in parallel, likely on GPUs. 
+The integration of a parallel flux shape solver has resulted in a transient analysis tool that is up to 15 times faster than previous implementations on a single core.  Nuanced behaviour such as the variation of reactivity calculations during a TDKENO run may now be studied in detail to further improve the method.  It has been shown for difficult problems like TREAT simulations, the deterministic portion of the code requires significant CPU time and are ripe for parallelization. Future work will be to determine convergence criteria for the reactivity and point kinetics calculations and have these done in parallel, likely on GPUs. 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
